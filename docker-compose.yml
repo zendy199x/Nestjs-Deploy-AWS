@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  api:
+    image: xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/devops-demo-api-production:${IMAGE_TAG:-latest}
+    platform: linux/amd64
+    restart: always
+    ports:
+      - 3000:3000
+    command:
+      - /bin/sh
+      - -c
+      - |
+        # Sync shared public files
+        rm -rf /app/shared/public/*
+        cp -r /app/public/* /app/shared/public
+        #
+        # You can add more commands before startup: compile assets, run migrations, ... if you have
+        # ...
+        #
+        # Start node app
+        node dist/src/main.js
+    # environment:
+    #   - DATABASE_URL=${DATABASE_URL}
+    #   - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    #   - JWT_EXPIRES_TIME=${JWT_EXPIRES_TIME}
+    #   - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+    #   - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    #   - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+    #   - AWS_REGION=${AWS_REGION}
+    #   - SENTRY_DNS=${SENTRY_DNS}
+    volumes:
+      - public_assets:/app/shared/public
+
+  nginx:
+    image: nginx:alpine
+    platform: linux/amd64
+    restart: always
+    ports:
+      - 80:80
+    depends_on:
+      - api
+    volumes:
+      - public_assets:/app/public
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
+volumes:
+  public_assets:
